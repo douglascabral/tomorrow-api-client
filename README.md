@@ -32,9 +32,9 @@ The macOS disk images are built without Developer ID signing or notarization.
 
 ### Versioning and releases
 
-The current version is **1.0.0**. Tomorrow follows Semantic Versioning (`MAJOR.MINOR.PATCH`). Increment MAJOR for incompatible changes, MINOR for backward compatible features, and PATCH for backward compatible fixes.
+The current version is **1.0.1**. Tomorrow follows Semantic Versioning (`MAJOR.MINOR.PATCH`). Increment MAJOR for incompatible changes, MINOR for backward compatible features, and PATCH for backward compatible fixes.
 
-Commit the release notes at `docs/releases/<tag>.md` before creating the tag. Push a version tag such as `v1.0.0` to run the release workflow. After all four packages build, GitHub Actions publishes a release using that Markdown file as its description. Tags such as `v1.0.0-rc.1` are published as prereleases.
+Commit the release notes at `docs/releases/<tag>.md` before creating the tag. Push a version tag such as `v1.0.1` to run the release workflow. After all four packages build, GitHub Actions publishes a release using that Markdown file as its description. Tags such as `v1.0.1-rc.1` are published as prereleases. GitHub release downloads use `Tomorrow-<version>-<os>-<arch>.<extension>`.
 
 `make security` stages only non-ignored source files for Gitleaks and Trivy. It excludes `.env` files, generated build output, and test artifacts from scans.
 
@@ -83,6 +83,6 @@ Drag the response divider or use the keyboard on the resize control to change th
 
 Open **Settings** from the sidebar to choose English or Brazilian Portuguese, select the System, Light, Dark, or High contrast appearance, and set request timeouts from 10 to 120 seconds. Preferences are stored on this device. System appearance follows the operating system's light or dark setting and updates while the app is open. Requests use the system proxy settings. Workspaces are locked when the app closes; change the workspace password in Settings to re-encrypt its data.
 
-HTTP requests identify the client with `User-Agent: Tomorrow/1.0.0`. A request-level `User-Agent` header can override the default.
+HTTP requests identify the client with `User-Agent: Tomorrow/1.0.1`. A request-level `User-Agent` header can override the default.
 
 In **History**, confirm before removing a single request or clearing every entry. History changes are saved in the encrypted workspace.

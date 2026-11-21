@@ -25,7 +25,7 @@ jobs:
         run: |
           version="${RELEASE_TAG#v}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Use a release tag such as v1.0.0 or v1.0.0-rc.1." >&2
+            echo "Use a release tag such as v1.0.1 or v1.0.1-rc.1." >&2
             exit 1
           fi
           notes="docs/releases/${RELEASE_TAG}.md"
@@ -143,12 +143,14 @@ jobs:
           if [[ "$version" == *-* ]]; then
             release_flags+=(--prerelease)
           fi
+          mkdir -p release-downloads
+          cp release-assets/windows/Tomorrow.exe "release-downloads/Tomorrow-${version}-windows-amd64.exe"
+          cp "release-assets/Tomorrow-${version}-amd64.dmg" "release-downloads/Tomorrow-${version}-macos-amd64.dmg"
+          cp "release-assets/Tomorrow-${version}-arm64.dmg" "release-downloads/Tomorrow-${version}-macos-arm64.dmg"
+          cp "release-assets/tomorrow_${version}_amd64.deb" "release-downloads/Tomorrow-${version}-linux-amd64.deb"
           gh release create "$RELEASE_TAG" \
             --verify-tag --title "$RELEASE_TAG" \
             --notes-file "docs/releases/${RELEASE_TAG}.md" \
             "${release_flags[@]}" \
-            release-assets/windows/Tomorrow.exe \
-            "release-assets/Tomorrow-${version}-amd64.dmg" \
-            "release-assets/Tomorrow-${version}-arm64.dmg" \
-            "release-assets/tomorrow_${version}_amd64.deb" \
+            release-downloads/* \
             --repo "$GITHUB_REPOSITORY"

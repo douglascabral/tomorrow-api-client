@@ -893,7 +893,7 @@ test('shows response headers, cookies, and timing details', async ({ page }) => 
   await createRequest(page);
   await sendRequest(page, 'https://api.example.test/users');
   await page.locator('.response-tabs').getByRole('button', { name: 'Request headers' }).click();
-  await expect(page.getByText(/User-Agent.*Tomorrow\/1\.0\.0/)).toBeVisible();
+  await expect(page.getByText(/User-Agent.*Tomorrow\/1\.0\.1/)).toBeVisible();
   await page.locator('.response-tabs').getByRole('button', { name: 'Response headers', exact: true }).click();
   await expect(page.getByText(/Content-Type.*application\/json/)).toBeVisible();
   await page.locator('.response-tabs').getByRole('button', { name: 'Cookies', exact: true }).click();

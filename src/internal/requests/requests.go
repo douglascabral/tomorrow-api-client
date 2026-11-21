@@ -19,7 +19,7 @@ import (
 const (
 	defaultTimeout      = 30 * time.Second
 	maximumTimeout      = 120 * time.Second
-	defaultUserAgent    = "Tomorrow/1.0.0"
+	defaultUserAgent    = "Tomorrow/1.0.1"
 	maximumResponseSize = 8 * 1024 * 1024
 	maximumRequestSize  = 32 * 1024 * 1024
 )
