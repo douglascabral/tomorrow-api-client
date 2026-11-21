@@ -29,6 +29,13 @@ Tomorrow is an offline-first desktop client for HTTP and REST APIs. It supports 
 - Record the red and green results in the task or pull request. If you could not run the test before implementing, record why.
 - Use Go tests for backend behavior and Playwright for user-facing workflows.
 
+## Releases
+
+- Follow Semantic Versioning (`MAJOR.MINOR.PATCH`). Increment MAJOR for incompatible changes, MINOR for backward compatible features, and PATCH for backward compatible fixes.
+- When changing the product version, keep the README, default package version, frontend package metadata and lockfile, and the frontend and Go HTTP user agents in sync. Update their test expectations too.
+- Before preparing any version tag, write English release notes in `docs/releases/<tag>.md` using the exact tag, including the `v` prefix. Summarize user-facing changes since the previous release and include any known installation limitations.
+- Include the notes in the commit the tag points to. The release workflow uses the Markdown file as the GitHub Release description.
+
 ## Verification
 
 Run these checks before marking a change complete:

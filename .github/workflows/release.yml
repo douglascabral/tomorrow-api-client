@@ -1,18 +1,41 @@
-name: Build release assets
+name: Publish release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.event.release.tag_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate version and release notes
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Use a release tag such as v1.0.0 or v1.0.0-rc.1." >&2
+            exit 1
+          fi
+          notes="docs/releases/${RELEASE_TAG}.md"
+          if [[ ! -s "$notes" ]]; then
+            echo "Add release notes at $notes before pushing the tag." >&2
+            exit 1
+          fi
+
   linux-windows:
+    needs: validate
     runs-on: ubuntu-24.04
     container: debian:13
     steps:
@@ -44,13 +67,9 @@ jobs:
       - name: Build packages
         shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           version="${RELEASE_TAG#v}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Use a release tag such as v0.1.0 or v0.1.0-rc.1." >&2
-            exit 1
-          fi
           wails_version="$(cd src && go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
           go install "github.com/wailsapp/wails/v3/cmd/wails3@$wails_version"
           make install
@@ -64,6 +83,7 @@ jobs:
             build/*.deb
 
   macos:
+    needs: validate
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -83,13 +103,9 @@ jobs:
 
       - name: Build disk images
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           version="${RELEASE_TAG#v}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Use a release tag such as v0.1.0 or v0.1.0-rc.1." >&2
-            exit 1
-          fi
           wails_version="$(cd src && go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
           go install "github.com/wailsapp/wails/v3/cmd/wails3@$wails_version"
           make install
@@ -107,21 +123,32 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
-      - name: Attach packages to the release
+      - name: Publish release with packages and notes
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           version="${RELEASE_TAG#v}"
-          gh release upload "$RELEASE_TAG" \
+          release_flags=()
+          if [[ "$version" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+          gh release create "$RELEASE_TAG" \
+            --verify-tag --title "$RELEASE_TAG" \
+            --notes-file "docs/releases/${RELEASE_TAG}.md" \
+            "${release_flags[@]}" \
             release-assets/windows/Tomorrow.exe \
             "release-assets/Tomorrow-${version}-amd64.dmg" \
             "release-assets/Tomorrow-${version}-arm64.dmg" \
             "release-assets/tomorrow_${version}_amd64.deb" \
-            --repo "$GITHUB_REPOSITORY" --clobber
+            --repo "$GITHUB_REPOSITORY"

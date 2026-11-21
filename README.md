@@ -20,7 +20,7 @@ make run
 
 `make build` builds the frontend and compiles the desktop app to `build/tomorrow` using Go; the Wails CLI is not required. Set `GO`, `NPM`, `LIZARD`, `GITLEAKS`, or `TRIVY` when a tool is not available under its default command name.
 
-Run `make release` on Linux x86-64 to build the Windows and Linux packages, or on macOS to build the disk images with `hdiutil`. Install frontend dependencies with `make install` first. Release packaging requires the Wails v3 CLI (`wails3`) and uses `dpkg-deb` on Linux. Override the release version with `make release PACKAGE_VERSION=0.2.0`.
+Run `make release` on Linux x86-64 to build the Windows and Linux packages, or on macOS to build the disk images with `hdiutil`. Install frontend dependencies with `make install` first. Release packaging requires the Wails v3 CLI (`wails3`) and uses `dpkg-deb` on Linux. Override the release version with `make release PACKAGE_VERSION=1.1.0`.
 
 | Target | Artifact |
 | --- | --- |
@@ -30,7 +30,11 @@ Run `make release` on Linux x86-64 to build the Windows and Linux packages, or o
 
 The macOS disk images are built without Developer ID signing or notarization.
 
-Publishing a GitHub Release with a tag such as `v0.1.0` or `v0.1.0-rc.1` runs the release workflow. It builds all four packages and attaches them to that release. The tag supplies the package version.
+### Versioning and releases
+
+The current version is **1.0.0**. Tomorrow follows Semantic Versioning (`MAJOR.MINOR.PATCH`). Increment MAJOR for incompatible changes, MINOR for backward compatible features, and PATCH for backward compatible fixes.
+
+Commit the release notes at `docs/releases/<tag>.md` before creating the tag. Push a version tag such as `v1.0.0` to run the release workflow. After all four packages build, GitHub Actions publishes a release using that Markdown file as its description. Tags such as `v1.0.0-rc.1` are published as prereleases.
 
 `make security` stages only non-ignored source files for Gitleaks and Trivy. It excludes `.env` files, generated build output, and test artifacts from scans.
 
@@ -79,6 +83,6 @@ Drag the response divider or use the keyboard on the resize control to change th
 
 Open **Settings** from the sidebar to choose English or Brazilian Portuguese, select the System, Light, Dark, or High contrast appearance, and set request timeouts from 10 to 120 seconds. Preferences are stored on this device. System appearance follows the operating system's light or dark setting and updates while the app is open. Requests use the system proxy settings. Workspaces are locked when the app closes; change the workspace password in Settings to re-encrypt its data.
 
-HTTP requests identify the client with `User-Agent: Tomorrow/0.1.0`. A request-level `User-Agent` header can override the default.
+HTTP requests identify the client with `User-Agent: Tomorrow/1.0.0`. A request-level `User-Agent` header can override the default.
 
 In **History**, confirm before removing a single request or clearing every entry. History changes are saved in the encrypted workspace.
