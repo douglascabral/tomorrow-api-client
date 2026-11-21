@@ -109,7 +109,7 @@ run: build ## Build and run the desktop application
 	./$(BINARY)
 endif
 
-test: ## Run Go unit tests and frontend type checks
+test: frontend-build ## Run Go unit tests and frontend type checks
 	cd $(GO_DIR) && $(GO) test ./...
 	$(NPM) --prefix $(FRONTEND_DIR) run check
 

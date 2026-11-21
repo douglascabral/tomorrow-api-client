@@ -34,6 +34,12 @@ Publishing a GitHub Release with a tag such as `v0.1.0` or `v0.1.0-rc.1` runs th
 
 `make security` stages only non-ignored source files for Gitleaks and Trivy. It excludes `.env` files, generated build output, and test artifacts from scans.
 
+### Continuous integration
+
+GitHub Actions runs `make check`, `make lint`, `make security`, and `make e2e` on pushes to any branch and on pull requests. To require them before merging, add **Build and unit checks**, **Lint and security**, and **Playwright** as required status checks in the GitHub ruleset for the branches you want to protect.
+
+Enable the optional local pre-commit hook with `git config core.hooksPath .githooks`. It checks staged changes for whitespace errors.
+
 ### Tool paths and writable Go cache
 
 If Go or npm is not found, initialize the version managers in the current shell before running Make:

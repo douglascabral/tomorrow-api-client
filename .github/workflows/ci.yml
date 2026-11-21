@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build and unit checks
+    runs-on: ubuntu-24.04
+    container: debian:13
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates git libgtk-4-dev libwebkitgtk-6.0-dev pkg-config
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: make install
+      - run: make check
+
+  lint-security:
+    name: Lint and security
+    runs-on: ubuntu-24.04
+    container: debian:13
+    steps:
+      - name: Install tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git gitleaks make python3-venv
+          python3 -m venv "$RUNNER_TEMP/lint"
+          "$RUNNER_TEMP/lint/bin/pip" install lizard==1.26.0
+          echo "$RUNNER_TEMP/lint/bin" >> "$GITHUB_PATH"
+          curl -fsSL -o "$RUNNER_TEMP/trivy.tar.gz" \
+            https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz
+          mkdir -p "$RUNNER_TEMP/trivy-bin"
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP/trivy-bin" trivy
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: make lint
+      - run: make security
+
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: make install
+      - run: npm --prefix src/frontend exec -- playwright install --with-deps chromium
+      - run: make e2e

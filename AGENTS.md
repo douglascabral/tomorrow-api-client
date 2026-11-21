@@ -15,6 +15,7 @@ Tomorrow is an offline-first desktop client for HTTP and REST APIs. It supports 
 - Keep Go application code in `src/`, internal Go packages in `src/internal/`, and the Svelte and TypeScript frontend in `src/frontend/`.
 - Use the dependency versions declared in `src/go.mod`, `src/frontend/package.json`, and the relevant lockfiles.
 - Keep code and contributor documentation in English. Put user-facing strings in the locale files.
+- Write commit messages in English and follow Conventional Commits. Use an imperative subject in the format `type(scope): description`, with an optional scope. For example, `feat(release): automate desktop packaging`.
 - Reuse existing helpers and components. Prefer standard library and platform features before adding dependencies.
 - Use named constants for limits, timeouts, and other domain-specific values.
 - Keep the interface minimal and consistent with existing components. Add or update Storybook stories when creating or changing reusable components.
