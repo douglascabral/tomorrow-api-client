@@ -10,3 +10,5 @@ build/
 /src/frontend/storybook-static/
 .env
 .env.*
+
+/src/tomorrow_windows_amd64.syso

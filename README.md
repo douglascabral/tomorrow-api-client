@@ -20,7 +20,17 @@ make run
 
 `make build` builds the frontend and compiles the desktop app to `build/tomorrow` using Go; the Wails CLI is not required. Set `GO`, `NPM`, `LIZARD`, `GITLEAKS`, or `TRIVY` when a tool is not available under its default command name.
 
-Release artifacts can be built with `make build-windows`, `make build-macos`, and `make package-linux-deb`. Windows creates `build/windows/Tomorrow.exe`; macOS creates Intel and Apple Silicon executables under `build/macos`; Linux creates only `build/tomorrow_0.1.0_amd64.deb`. The Windows and macOS executables embed the app icon. Linux packaging includes the application icon theme assets and desktop entry. `make release` builds all three platform outputs; cross-building macOS may require the Wails Pure Go cross-build tooling for the host environment.
+Run `make release` on Linux x86-64 to build the Windows and Linux packages, or on macOS to build the disk images with `hdiutil`. Install frontend dependencies with `make install` first. Release packaging requires the Wails v3 CLI (`wails3`) and uses `dpkg-deb` on Linux. Override the release version with `make release PACKAGE_VERSION=0.2.0`.
+
+| Target | Artifact |
+| --- | --- |
+| `make build-windows` | `build/windows/Tomorrow.exe` for Windows x64, with the icon embedded |
+| `make package-macos` | `build/macos/Tomorrow-<version>-amd64.dmg` for Intel and `build/macos/Tomorrow-<version>-arm64.dmg` for Apple Silicon, each containing `Tomorrow.app` with its Finder icon and an Applications shortcut |
+| `make package-linux-deb` | `build/tomorrow_<version>_amd64.deb` with the desktop entry and icon theme assets |
+
+The macOS disk images are built without Developer ID signing or notarization.
+
+Publishing a GitHub Release with a tag such as `v0.1.0` or `v0.1.0-rc.1` runs the release workflow. It builds all four packages and attaches them to that release. The tag supplies the package version.
 
 `make security` stages only non-ignored source files for Gitleaks and Trivy. It excludes `.env` files, generated build output, and test artifacts from scans.
 

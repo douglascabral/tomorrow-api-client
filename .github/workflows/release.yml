@@ -1,0 +1,124 @@
+name: Build release assets
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  linux-windows:
+    runs-on: ubuntu-24.04
+    container: debian:13
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates git libgtk-4-dev \
+            libwebkitgtk-6.0-dev pkg-config xz-utils
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Build packages
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Use a release tag such as v0.1.0 or v0.1.0-rc.1." >&2
+            exit 1
+          fi
+          wails_version="$(cd src && go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@$wails_version"
+          make install
+          make release WAILS="$(go env GOPATH)/bin/wails3" PACKAGE_VERSION="$version"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-windows
+          if-no-files-found: error
+          path: |
+            build/windows/Tomorrow.exe
+            build/*.deb
+
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Build disk images
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Use a release tag such as v0.1.0 or v0.1.0-rc.1." >&2
+            exit 1
+          fi
+          wails_version="$(cd src && go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@$wails_version"
+          make install
+          make release WAILS="$(go env GOPATH)/bin/wails3" PACKAGE_VERSION="$version"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          if-no-files-found: error
+          path: build/macos/*.dmg
+
+  publish:
+    needs: [linux-windows, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Attach packages to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          gh release upload "$RELEASE_TAG" \
+            release-assets/windows/Tomorrow.exe \
+            "release-assets/Tomorrow-${version}-amd64.dmg" \
+            "release-assets/Tomorrow-${version}-arm64.dmg" \
+            "release-assets/tomorrow_${version}_amd64.deb" \
+            --repo "$GITHUB_REPOSITORY" --clobber

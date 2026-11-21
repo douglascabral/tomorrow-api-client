@@ -1,5 +1,6 @@
 GO ?= go
 NPM ?= npm
+WAILS ?= wails3
 LIZARD ?= lizard
 LIZARD_DUPLICATE_RATE ?= 5
 GITLEAKS ?= gitleaks
@@ -11,12 +12,14 @@ BUILD_DIR := build
 BINARY := $(BUILD_DIR)/tomorrow
 LINUX_SHARE_DIR := $(BUILD_DIR)/share
 LINUX_DESKTOP_ENTRY := $(LINUX_SHARE_DIR)/applications/org.tomorrow.Tomorrow.desktop
-PACKAGE_VERSION := 0.1.0
+PACKAGE_VERSION ?= 0.1.0
 PACKAGE_ROOT := $(BUILD_DIR)/linux-deb-root
 APP_ICON_SIZES := 16 32 48 128 256
+RELEASE_ICONS := $(BUILD_DIR)/release-icons
+WINDOWS_RESOURCE := $(GO_DIR)/tomorrow_windows_amd64.syso
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev frontend-dev storybook build-storybook build linux-desktop-data build-windows build-macos package-linux-deb release run test check e2e lint security clean
+.PHONY: frontend-build release-icons help install dev frontend-dev storybook build-storybook build linux-desktop-data build-windows build-macos package-macos package-linux-deb release run test check e2e lint security clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"; print "Tomorrow development commands:"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -35,8 +38,10 @@ storybook: ## Start the frontend component documentation
 build-storybook: ## Build the frontend component documentation
 	$(NPM) --prefix $(FRONTEND_DIR) run build-storybook
 
-build: ## Build the frontend and desktop application
+frontend-build:
 	$(NPM) --prefix $(FRONTEND_DIR) run build
+
+build: frontend-build ## Build the frontend and desktop application
 	mkdir -p $(BUILD_DIR)
 	cd $(GO_DIR) && $(GO) build -o ../$(BINARY) .
 	$(MAKE) linux-desktop-data
@@ -50,18 +55,35 @@ linux-desktop-data: ## Prepare Linux desktop metadata and icon theme assets
 		cp "src/icons/tomorrow-$${size}.png" "$$icon_dir/tomorrow.png"; \
 	done
 
-build-windows: ## Build the Windows x64 executable with the application icon
-	$(NPM) --prefix $(FRONTEND_DIR) run build
-	mkdir -p $(BUILD_DIR)/windows
-	cd $(GO_DIR) && WAILS_PUREGO=1 GOOS=windows GOARCH=amd64 $(GO) build -o ../$(BUILD_DIR)/windows/Tomorrow.exe .
+release-icons:
+	mkdir -p $(RELEASE_ICONS)
+	$(WAILS) generate icons -input src/icons/tomorrow-256.png -macfilename $(RELEASE_ICONS)/Tomorrow.icns -windowsfilename $(RELEASE_ICONS)/Tomorrow.ico
 
-build-macos: ## Build macOS Intel and Apple Silicon executables with the application icon
-	$(NPM) --prefix $(FRONTEND_DIR) run build
-	mkdir -p $(BUILD_DIR)/macos
-	cd $(GO_DIR) && WAILS_PUREGO=1 GOOS=darwin GOARCH=amd64 $(GO) build -tags=purego -o ../$(BUILD_DIR)/macos/Tomorrow-amd64 .
-	cd $(GO_DIR) && WAILS_PUREGO=1 GOOS=darwin GOARCH=arm64 $(GO) build -tags=purego -o ../$(BUILD_DIR)/macos/Tomorrow-arm64 .
+build-windows: frontend-build release-icons ## Build the Windows x64 executable with the application icon
+	mkdir -p $(BUILD_DIR)/windows
+	$(WAILS) generate syso -arch amd64 -icon $(RELEASE_ICONS)/Tomorrow.ico -manifest src/windows/Tomorrow.exe.manifest -out $(WINDOWS_RESOURCE)
+	cd $(GO_DIR) && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build -ldflags="-H windowsgui" -o ../$(BUILD_DIR)/windows/Tomorrow.exe .
+
+build-macos: frontend-build release-icons ## Package the macOS app with its icon for Intel and Apple Silicon
+	set -eu; for arch in amd64 arm64; do \
+		package_dir="$(BUILD_DIR)/macos/$$arch"; \
+		contents="$$package_dir/Tomorrow.app/Contents"; \
+		mkdir -p "$$contents/MacOS" "$$contents/Resources"; \
+		sed 's|@VERSION@|$(PACKAGE_VERSION)|g' src/macos/Info.plist > "$$contents/Info.plist"; \
+		cp "$(RELEASE_ICONS)/Tomorrow.icns" "$$contents/Resources/Tomorrow.icns"; \
+		(cd $(GO_DIR) && CGO_ENABLED=0 GOOS=darwin GOARCH=$$arch $(GO) build -tags=purego -o "../$$contents/MacOS/Tomorrow" .); \
+	done
+
+package-macos: build-macos ## Create macOS disk images with Tomorrow.app and an Applications shortcut
+	set -eu; for arch in amd64 arm64; do \
+		package_dir="$(BUILD_DIR)/macos/$$arch"; \
+		ln -sfn /Applications "$$package_dir/Applications"; \
+		hdiutil create -ov -format UDZO -volname Tomorrow -srcfolder "$$package_dir" \
+			"$(BUILD_DIR)/macos/Tomorrow-$(PACKAGE_VERSION)-$$arch.dmg"; \
+	done
 
 package-linux-deb: build ## Package the Linux x64 application as a .deb with desktop and icon assets
+	@test "$$(uname -s):$$(uname -m)" = Linux:x86_64 || { echo "The amd64 .deb requires an x86-64 Linux host." >&2; exit 1; }
 	mkdir -p $(PACKAGE_ROOT)/DEBIAN $(PACKAGE_ROOT)/usr/bin $(PACKAGE_ROOT)/usr/share/applications
 	install -m 0755 $(BINARY) $(PACKAGE_ROOT)/usr/bin/tomorrow
 	sed 's|@EXEC_PATH@|tomorrow|g' src/linux/org.tomorrow.Tomorrow.desktop > $(PACKAGE_ROOT)/usr/share/applications/org.tomorrow.Tomorrow.desktop
@@ -70,10 +92,14 @@ package-linux-deb: build ## Package the Linux x64 application as a .deb with des
 		mkdir -p "$$icon_dir"; \
 		install -m 0644 "src/icons/tomorrow-$${size}.png" "$$icon_dir/tomorrow.png"; \
 	done
-	printf 'Package: tomorrow-api-client\nVersion: $(PACKAGE_VERSION)\nSection: devel\nPriority: optional\nArchitecture: amd64\nMaintainer: Tomorrow API Client\nDescription: Offline-first HTTP API client\n' > $(PACKAGE_ROOT)/DEBIAN/control
+	printf 'Package: tomorrow-api-client\nVersion: $(PACKAGE_VERSION)\nSection: devel\nPriority: optional\nArchitecture: amd64\nMaintainer: Tomorrow API Client\nDepends: libgtk-4-1, libwebkitgtk-6.0-4\nDescription: Offline-first HTTP API client\n' > $(PACKAGE_ROOT)/DEBIAN/control
 	dpkg-deb --root-owner-group --build $(PACKAGE_ROOT) $(BUILD_DIR)/tomorrow_$(PACKAGE_VERSION)_amd64.deb
 
-release: build-windows build-macos package-linux-deb ## Build Windows, macOS, and Linux .deb release artifacts
+ifeq ($(shell uname -s),Darwin)
+release: package-macos ## Build macOS release artifacts
+else
+release: build-windows package-linux-deb ## Build Windows and Linux release artifacts
+endif
 
 ifeq ($(shell uname -s),Linux)
 run: build ## Build and run the desktop application
@@ -106,4 +132,4 @@ security: ## Scan tracked source with Gitleaks and dependencies/configuration wi
 	GITLEAKS=$(GITLEAKS) TRIVY=$(TRIVY) ./scripts/security-scan.sh
 
 clean: ## Remove generated build and frontend output
-	rm -rf $(BUILD_DIR) $(FRONTEND_DIR)/dist
+	rm -rf $(BUILD_DIR) $(FRONTEND_DIR)/dist $(WINDOWS_RESOURCE)
