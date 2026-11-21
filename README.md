@@ -38,6 +38,8 @@ Publishing a GitHub Release with a tag such as `v0.1.0` or `v0.1.0-rc.1` runs th
 
 GitHub Actions runs `make check`, `make lint`, `make security`, and `make e2e` on pushes to any branch and on pull requests. To require them before merging, add **Build and unit checks**, **Lint and security**, and **Playwright** as required status checks in the GitHub ruleset for the branches you want to protect.
 
+The Linux build and Linux/Windows release jobs register their checkout as a Git safe directory so Go can record revision metadata from inside the Debian container.
+
 Enable the optional local pre-commit hook with `git config core.hooksPath .githooks`. It checks staged changes for whitespace errors.
 
 ### Tool paths and writable Go cache

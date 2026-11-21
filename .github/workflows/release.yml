@@ -27,6 +27,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Trust the checkout for Git build metadata
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: src/go.mod
