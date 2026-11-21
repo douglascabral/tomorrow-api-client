@@ -25,7 +25,7 @@ jobs:
         run: |
           version="${RELEASE_TAG#v}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Use a release tag such as v1.0.1 or v1.0.1-rc.1." >&2
+            echo "Use a release tag such as v1.0.2 or v1.0.2-rc.1." >&2
             exit 1
           fi
           notes="docs/releases/${RELEASE_TAG}.md"

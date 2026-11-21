@@ -167,7 +167,7 @@ func TestSendUserAgent(t *testing.T) {
 		headers   map[string]string
 		userAgent string
 	}{
-		{name: "default", userAgent: "Tomorrow/1.0.1"},
+		{name: "default", userAgent: "Tomorrow/1.0.2"},
 		{name: "custom", headers: map[string]string{"User-Agent": "CustomClient/2.0"}, userAgent: "CustomClient/2.0"},
 	}
 	for _, test := range tests {

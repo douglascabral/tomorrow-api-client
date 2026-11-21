@@ -658,7 +658,7 @@
       await saveRequest();
       const query = valuesFromRows(queryRows);
       const headers = resolveEnvironmentValues(requestHeaders(resolveEnvironmentValues(valuesFromRows(headerRows))));
-      const outgoingHeaders: Record<string, string> = { 'User-Agent': 'Tomorrow/1.0.1', ...headers };
+      const outgoingHeaders: Record<string, string> = { 'User-Agent': 'Tomorrow/1.0.2', ...headers };
       if (bodyType === 'JSON' && draft.body && !Object.keys(outgoingHeaders).some((key) => key.toLowerCase() === 'content-type')) outgoingHeaders['Content-Type'] = 'application/json';
       if (bodyType === 'Text' && draft.body && !Object.keys(outgoingHeaders).some((key) => key.toLowerCase() === 'content-type')) outgoingHeaders['Content-Type'] = 'text/plain; charset=utf-8';
       if (bodyType === 'Form URL-encoded' && !Object.keys(outgoingHeaders).some((key) => key.toLowerCase() === 'content-type')) outgoingHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
@@ -724,7 +724,7 @@
     const shellURL = shellQuote(resolvedURL);
     const shellBody = shellQuote(resolvedBody);
     const headers = resolveEnvironmentValues(requestHeaders(valuesFromRows(headerRows)));
-    headers['User-Agent'] ??= 'Tomorrow/1.0.1';
+    headers['User-Agent'] ??= 'Tomorrow/1.0.2';
     if (bodyType === 'JSON' && resolvedBody && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')) headers['Content-Type'] = 'application/json';
     if (bodyType === 'Text' && resolvedBody && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')) headers['Content-Type'] = 'text/plain; charset=utf-8';
     if (bodyType === 'Form URL-encoded' && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')) headers['Content-Type'] = 'application/x-www-form-urlencoded';
