@@ -77,9 +77,21 @@ build-macos: frontend-build release-icons ## Package the macOS app with its icon
 package-macos: build-macos ## Create macOS disk images with Tomorrow.app and an Applications shortcut
 	set -eu; for arch in amd64 arm64; do \
 		package_dir="$(BUILD_DIR)/macos/$$arch"; \
+		app="$$package_dir/Tomorrow.app"; \
+		image="$(BUILD_DIR)/macos/Tomorrow-$(PACKAGE_VERSION)-$$arch.dmg"; \
+		plutil -lint "$$app/Contents/Info.plist"; \
+		codesign --force --sign - "$$app"; \
+		codesign --verify --strict --verbose=2 "$$app"; \
 		ln -sfn /Applications "$$package_dir/Applications"; \
-		hdiutil create -ov -format UDZO -volname Tomorrow -srcfolder "$$package_dir" \
-			"$(BUILD_DIR)/macos/Tomorrow-$(PACKAGE_VERSION)-$$arch.dmg"; \
+		hdiutil create -ov -format UDZO -volname Tomorrow -srcfolder "$$package_dir" "$$image"; \
+		hdiutil verify "$$image"; \
+		( \
+			mount_dir=$$(mktemp -d); \
+			trap 'rmdir "$$mount_dir"' EXIT; \
+			hdiutil attach -readonly -nobrowse -mountpoint "$$mount_dir" "$$image"; \
+			trap 'hdiutil detach "$$mount_dir"; rmdir "$$mount_dir"' EXIT; \
+			codesign --verify --strict --verbose=2 "$$mount_dir/Tomorrow.app" \
+		); \
 	done
 
 package-linux-deb: build ## Package the Linux x64 application as a .deb with desktop and icon assets

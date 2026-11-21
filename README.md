@@ -28,7 +28,7 @@ Run `make release` on Linux x86-64 to build the Windows and Linux packages, or o
 | `make package-macos` | `build/macos/Tomorrow-<version>-amd64.dmg` for Intel and `build/macos/Tomorrow-<version>-arm64.dmg` for Apple Silicon, each containing `Tomorrow.app` with its Finder icon and an Applications shortcut |
 | `make package-linux-deb` | `build/tomorrow_<version>_amd64.deb` with the desktop entry and icon theme assets |
 
-The macOS disk images are built without Developer ID signing or notarization.
+The macOS packaging step applies and verifies an ad hoc signature on each app bundle, then verifies each disk image and checks the signature again on the mounted app. Public downloads still require Developer ID signing and Apple notarization to pass Gatekeeper.
 
 ### Versioning and releases
 
