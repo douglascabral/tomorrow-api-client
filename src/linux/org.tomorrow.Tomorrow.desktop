@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Tomorrow
+Comment=Offline-first HTTP API client
+Exec=@EXEC_PATH@
+TryExec=@EXEC_PATH@
+Icon=tomorrow
+Terminal=false
+Categories=Development;
+StartupWMClass=org.tomorrow.Tomorrow
